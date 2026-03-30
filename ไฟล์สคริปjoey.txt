@@ -212,8 +212,8 @@ local function buildGUI()
     local tracking=true
     local conn=PGui.ChildAdded:Connect(function(child) if tracking and child:IsA("ScreenGui") then table.insert(windUIGuis,child) end end)
     WindUI=loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-    local W=WindUI:CreateWindow({Title="Joey Hub",Icon="bird",Author="by MINHAJ"})
-    W:EditOpenButton({Title="JoeyHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true})
+    local W=WindUI:CreateWindow({Title="YNW Hub",Icon="bird",Author="by YNW Melly"})
+    W:EditOpenButton({Title="YNWHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true})
     W:Tag({Title="v1.5",Icon="bird",Color=Color3.fromHex("#30ff6a"),Radius=13})
     
     -- [ TAB 1: MAIN ] --
