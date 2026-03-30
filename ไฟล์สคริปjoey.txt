@@ -1,0 +1,278 @@
+local RS=game:GetService("RunService"); local Players=game:GetService("Players")
+local TS=game:GetService("TweenService"); local Light=game:GetService("Lighting")
+local plr=Players.LocalPlayer; local PGui=plr.PlayerGui
+local flyOn,flySpeed,flyConn,bg,bv = false,50,nil,nil,nil
+local walkOn,walkDef,walkVal       = false,16,50
+local jumpOn,jumpDef,jumpVal,jumpConn = false,50,150,nil
+local aimbotOn,aimbotConn,aimTarget   = false,nil,nil
+local nearOn,nearConn,nearRange       = false,nil,100
+local espOn,espData                   = false,{}
+local espFill=Color3.fromRGB(255,50,50); local espOutline=Color3.fromRGB(255,130,130)
+local savedPos,tweenSpd=nil,10
+local fpsSaved,currentLang={}, "EN"
+local guiColor1,guiColor2=Color3.fromHex("0f7bff"),Color3.fromHex("0ff3ff")
+local WindUI,windUIGuis=nil,{}
+local noclipOn,noclipConn=false,nil
+local fullbrightOn,fbSaved=false,{}
+local antiAfkOn,antiAfkConn=false,nil
+local chatSpamOn,chatSpamDelay,chatMsg=false,1,"Joey Hub"
+local L3={
+    EN={main="Main",players="Players",settings="Settings",fly="Fly",flySpd="Fly Speed",walk="Walk Speed",walkVal="Walk Speed Value",jump="High Jump",jumpVal="Jump Power",savePos="Save Position",tpSaved="TP to Saved",tweenSaved="Tween to Saved",tweenSpd="Tween Speed",chatSpam="Chat Spam",chatMsg="Message",chatDelay="Spam Delay (sec)",selPlr="Select Player",refresh="Refresh List",tpPlr="TP to Player",tweenPlr="Tween to Player",tweenSpdP="Tween Speed",aimbot="Aimbot",nearAim="Aimbot Near",range="Range",noclip="NoClip",esp="ESP Players",espColor="ESP Color",plrInfo="Player Info",fps="FPS Boost",fullbright="FullBright",antiAfk="Anti AFK",rejoin="Rejoin",serverHop="Server Hop",guiColor="GUI Color",lang="Language",reset="Reset GUI"},
+    TH={main="หลัก",players="ผู้เล่น",settings="ตั้งค่า",fly="บิน",flySpd="ความเร็วบิน",walk="วิ่งเร็ว",walkVal="ค่าความเร็ว",jump="กระโดดสูง",jumpVal="แรงกระโดด",savePos="บันทึกตำแหน่ง",tpSaved="วาปไปที่บันทึก",tweenSaved="เคลื่อนที่ไปที่บันทึก",tweenSpd="ความเร็ว Tween",chatSpam="สแปมแชท",chatMsg="ข้อความ",chatDelay="หน่วงเวลา (วิ)",selPlr="เลือกผู้เล่น",refresh="รีเฟรชรายชื่อ",tpPlr="วาปไปหาผู้เล่น",tweenPlr="เคลื่อนที่ไปหาผู้เล่น",tweenSpdP="ความเร็ว Tween",aimbot="เล็งอัตโนมัติ",nearAim="เล็งคนใกล้สุด",range="ระยะ",noclip="เดินทะลุกำแพง",esp="มองทะลุ",espColor="สี ESP",plrInfo="ข้อมูลผู้เล่น",fps="เพิ่ม FPS",fullbright="สว่างทุกที่",antiAfk="กัน AFK",rejoin="เข้าเกมใหม่",serverHop="กระโดดเซิร์ฟ",guiColor="สีหลัก GUI",lang="ภาษา",reset="รีเซ็ต GUI"},
+    KH={main="មេ",players="អ្នកលេង",settings="ការកំណត់",fly="ហោះ",flySpd="ល្បឿនហោះ",walk="ដើរលឿន",walkVal="តម្លៃល្បឿន",jump="លោតខ្ពស់",jumpVal="កម្លាំងលោត",savePos="រក្សាទីតាំង",tpSaved="TP ទៅទីតាំង",tweenSaved="រំកិលទៅទីតាំង",tweenSpd="ល្បឿន Tween",chatSpam="ស្ប៉ាមជជែក",chatMsg="សារ",chatDelay="យឺតពេល (វិ)",selPlr="ជ្រើសអ្នកលេង",refresh="ធ្វើបញ្ជីឡើងវិញ",tpPlr="TP ទៅអ្នកលេង",tweenPlr="រំកិលទៅអ្នកលេង",tweenSpdP="ល្បឿន Tween",aimbot="កំណត់គោលដៅ",nearAim="គោលដៅជិតបំផុត",range="ចម្ងាយ",noclip="រត់ទ្លុះជញ្ជាំង",esp="មើលទ្លុះជញ្ជាំង",espColor="ពណ៌ ESP",plrInfo="ព័ត៌មានអ្នកលេង",fps="បង្កើន FPS",fullbright="ភ្លឺគ្រប់ទីកន្លែង",antiAfk="ការពារ AFK",rejoin="ចូលហ្គេមឡើងវិញ",serverHop="ផ្លាស់ប្ដូរម៉ាស៊ីន",guiColor="ពណ៌ GUI",lang="ភាសា",reset="កំណត់ GUI ឡើងវិញ"},
+}
+local function getHum() local c=plr.Character; return c and c:FindFirstChildWhichIsA("Humanoid") end
+local function getHRP() local c=plr.Character; return c and c:FindFirstChild("HumanoidRootPart") end
+local function notify(t,m) pcall(function() game:GetService("StarterGui"):SetCore("SendNotification",{Title=t,Text=m,Duration=3}) end) end
+local STATES={Enum.HumanoidStateType.Climbing,Enum.HumanoidStateType.FallingDown,Enum.HumanoidStateType.Flying,Enum.HumanoidStateType.Freefall,Enum.HumanoidStateType.GettingUp,Enum.HumanoidStateType.Jumping,Enum.HumanoidStateType.Landed,Enum.HumanoidStateType.Physics,Enum.HumanoidStateType.PlatformStanding,Enum.HumanoidStateType.Ragdoll,Enum.HumanoidStateType.Running,Enum.HumanoidStateType.RunningNoPhysics,Enum.HumanoidStateType.Seated,Enum.HumanoidStateType.StrafingNoPhysics,Enum.HumanoidStateType.Swimming}
+local function setStates(h,v) for _,s in ipairs(STATES) do h:SetStateEnabled(s,v) end; h:ChangeState(v and Enum.HumanoidStateType.RunningNoPhysics or Enum.HumanoidStateType.Swimming) end
+local function stopFly()
+    flyOn=false; if flyConn then flyConn:Disconnect(); flyConn=nil end
+    if bg then bg:Destroy(); bg=nil end; if bv then bv:Destroy(); bv=nil end
+    local c=plr.Character; if not c then return end
+    local h=c:FindFirstChildWhichIsA("Humanoid"); if h then setStates(h,true); h.PlatformStand=false end
+    local a=c:FindFirstChild("Animate"); if a then a.Disabled=false end
+end
+local function startFly()
+    local c=plr.Character; if not c then return end
+    local h=c:FindFirstChildWhichIsA("Humanoid"); if not h then return end
+    local torso=(h.RigType==Enum.HumanoidRigType.R6) and c:FindFirstChild("Torso") or c:FindFirstChild("UpperTorso"); if not torso then return end
+    local a=c:FindFirstChild("Animate"); if a then a.Disabled=true end
+    for _,t in ipairs(h:GetPlayingAnimationTracks()) do t:AdjustSpeed(0) end
+    setStates(h,false); h.PlatformStand=true
+    bg=Instance.new("BodyGyro",torso); bg.P=9e4; bg.maxTorque=Vector3.new(9e9,9e9,9e9); bg.D=100; bg.cframe=torso.CFrame
+    bv=Instance.new("BodyVelocity",torso); bv.velocity=Vector3.new(0,.1,0); bv.maxForce=Vector3.new(9e9,9e9,9e9)
+    local cam=workspace.CurrentCamera; local cur,last=0,Vector3.new(0,.1,0)
+    flyConn=RS.Heartbeat:Connect(function(dt)
+        if not flyOn or not c:FindFirstChild("HumanoidRootPart") then return end
+        local md=h.MoveDirection; local cf=cam.CoordinateFrame; local wish=Vector3.zero
+        if md.Magnitude>.1 then
+            local fl=Vector3.new(cf.LookVector.X,0,cf.LookVector.Z); local ri=Vector3.new(cf.RightVector.X,0,cf.RightVector.Z)
+            if fl.Magnitude>0 then fl=fl.Unit end; if ri.Magnitude>0 then ri=ri.Unit end
+            wish=cf.LookVector*md:Dot(fl)+ri*md:Dot(ri); if wish.Magnitude>0 then wish=wish.Unit end
+        end
+        cur=cur+((wish.Magnitude>.1 and flySpeed or 0)-cur)*math.min((wish.Magnitude>.1 and 80 or 120)*dt,1)
+        if wish.Magnitude>.1 then last=wish end
+        if cur>.5 then bv.velocity=last*cur; bg.cframe=cf*CFrame.Angles(-math.rad(math.clamp(cur/math.max(flySpeed,1)*30,0,30)),0,0)
+        else bv.velocity=Vector3.zero; bg.cframe=cf end
+    end)
+end
+local function toggleFly(s) flyOn=s; if s then startFly() else stopFly() end end
+local function toggleWalk(s) walkOn=s; local h=getHum(); if not h then return end; if s then walkDef=h.WalkSpeed; h.WalkSpeed=walkVal else h.WalkSpeed=walkDef end end
+local function setWalk(v) walkVal=v*10; if walkOn then local h=getHum(); if h then h.WalkSpeed=walkVal end end end
+local function stopJump() jumpOn=false; if jumpConn then jumpConn:Disconnect(); jumpConn=nil end; local h=getHum(); if h then pcall(function() h.UseJumpPower=true end); h.JumpPower=jumpDef end end
+local function startJump()
+    local h=getHum(); if h then pcall(function() h.UseJumpPower=true end); jumpDef=h.JumpPower end
+    jumpConn=RS.Heartbeat:Connect(function() if not jumpOn then return end; local h2=getHum(); if not h2 then return end; pcall(function() h2.UseJumpPower=true end); if h2.JumpPower~=jumpVal then h2.JumpPower=jumpVal end end)
+end
+local function toggleJump(s) jumpOn=s; if s then startJump() else stopJump() end end
+local function toggleNoclip(s)
+    noclipOn=s
+    if s then
+        noclipConn=RS.Stepped:Connect(function()
+            local c=plr.Character; if not c then return end
+            for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
+        end)
+    else
+        if noclipConn then noclipConn:Disconnect(); noclipConn=nil end
+        local c=plr.Character; if not c then return end
+        for _,p in ipairs(c:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=true end end
+    end
+end
+local function sendChat(msg)
+    pcall(function()
+        local tcs=game:GetService("TextChatService")
+        if tcs.ChatVersion==Enum.ChatVersion.TextChatService then
+            local ch=tcs.TextChannels:FindFirstChild("RBXGeneral")
+            if ch then ch:SendAsync(msg); return end
+        end
+    end)
+    pcall(function()
+        local ev=game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if ev and ev:FindFirstChild("SayMessageRequest") then ev.SayMessageRequest:FireServer(msg,"All") end
+    end)
+end
+local function toggleChatSpam(s)
+    chatSpamOn=s
+    if s then
+        task.spawn(function()
+            while chatSpamOn do
+                sendChat(chatMsg)
+                task.wait(math.max(chatSpamDelay,.1))
+            end
+        end)
+    end
+end
+local function stopAimbot() aimbotOn=false; if aimbotConn then aimbotConn:Disconnect(); aimbotConn=nil end end
+local function startAimbot()
+    if aimbotConn then aimbotConn:Disconnect(); aimbotConn=nil end
+    aimbotConn=RS.Heartbeat:Connect(function()
+        if not aimbotOn or not aimTarget then return end
+        local tc=aimTarget.Character; if not tc then return end
+        local tr=tc:FindFirstChild("HumanoidRootPart"); if not tr then return end
+        local mr=getHRP(); if not mr then return end
+        workspace.CurrentCamera.CFrame=workspace.CurrentCamera.CFrame:Lerp(CFrame.lookAt(mr.Position+Vector3.new(0,1.5,0),tr.Position),0.2)
+    end)
+end
+local function toggleAimbot(s) aimbotOn=s; if s then if not aimTarget then notify("Aimbot","เลือกผู้เล่นก่อน!"); aimbotOn=false; return end; startAimbot() else stopAimbot() end end
+local function getNear() local mr=getHRP(); if not mr then return nil end; local best,d=nil,nearRange; for _,p in ipairs(Players:GetPlayers()) do if p==plr then continue end; local c=p.Character; if not c then continue end; local r=c:FindFirstChild("HumanoidRootPart"); if not r then continue end; local h=c:FindFirstChildWhichIsA("Humanoid"); if not h or h.Health<=0 then continue end; local dist=(r.Position-mr.Position).Magnitude; if dist<d then d=dist; best=p end end; return best end
+local function stopNear() nearOn=false; if nearConn then nearConn:Disconnect(); nearConn=nil end end
+local function startNear()
+    if nearConn then nearConn:Disconnect(); nearConn=nil end
+    nearConn=RS.Heartbeat:Connect(function()
+        if not nearOn then return end; local p=getNear(); if not p then return end
+        local tc=p.Character; if not tc then return end; local tr=tc:FindFirstChild("HumanoidRootPart"); if not tr then return end
+        local mr=getHRP(); if not mr then return end
+        workspace.CurrentCamera.CFrame=workspace.CurrentCamera.CFrame:Lerp(CFrame.lookAt(mr.Position+Vector3.new(0,1.5,0),tr.Position+Vector3.new(0,1.5,0)),0.2)
+    end)
+end
+local function toggleNear(s) nearOn=s; if s then startNear() else stopNear() end end
+local function makeESP(p)
+    if p==plr or espData[p] then return end; local c=p.Character; if not c then return end
+    local hl=Instance.new("Highlight"); hl.FillColor=espFill; hl.OutlineColor=espOutline; hl.FillTransparency=.55; hl.OutlineTransparency=0; hl.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop; hl.Parent=c
+    local hrp=c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso"); local bb=nil
+    if hrp then bb=Instance.new("BillboardGui"); bb.Adornee=hrp; bb.AlwaysOnTop=true; bb.Size=UDim2.new(0,120,0,30); bb.StudsOffset=Vector3.new(0,3.5,0); bb.Parent=hrp; local lbl=Instance.new("TextLabel",bb); lbl.Size=UDim2.new(1,0,1,0); lbl.BackgroundTransparency=1; lbl.Text=p.Name; lbl.TextColor3=espOutline; lbl.TextStrokeTransparency=0; lbl.TextSize=15; lbl.Font=Enum.Font.GothamBold end
+    espData[p]={hl=hl,bb=bb}
+end
+local function removeESP(p) local d=espData[p]; if not d then return end; pcall(function() if d.hl then d.hl:Destroy() end end); pcall(function() if d.bb then d.bb:Destroy() end end); espData[p]=nil end
+local function updateESP() for _,d in pairs(espData) do if d.hl then d.hl.FillColor=espFill; d.hl.OutlineColor=espOutline end; if d.bb then local l=d.bb:FindFirstChildOfClass("TextLabel"); if l then l.TextColor3=espOutline end end end end
+local function toggleESP(s) espOn=s; if s then for _,p in ipairs(Players:GetPlayers()) do makeESP(p) end else for p in pairs(espData) do removeESP(p) end; espData={} end end
+Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(.5); if espOn then makeESP(p) end end) end)
+Players.PlayerRemoving:Connect(function(p) removeESP(p); if aimTarget==p then aimTarget=nil; if aimbotOn then stopAimbot() end end end)
+local function savePos() local r=getHRP(); if not r then return end; savedPos=r.CFrame; notify("TP","บันทึกตำแหน่งแล้ว") end
+local function tpTo(cf) local r=getHRP(); if not r then return end; r.CFrame=cf end
+local function tweenTo(cf)
+    local r=getHRP(); if not r then return end; local h=getHum(); if h then h.WalkSpeed=0 end
+    local tw=TS:Create(r,TweenInfo.new(math.max((cf.Position-r.Position).Magnitude/(tweenSpd*20),.3),Enum.EasingStyle.Quad,Enum.EasingDirection.InOut),{CFrame=cf})
+    tw:Play(); tw.Completed:Connect(function() if h then h.WalkSpeed=walkOn and walkVal or walkDef end end)
+end
+local function showPlayerInfo(t)
+    if not t then notify("Info","เลือกผู้เล่นก่อน!"); return end
+    local c=t.Character; if not c then notify("Info",t.Name.." ไม่มีตัวละคร"); return end
+    local h=c:FindFirstChildWhichIsA("Humanoid"); if not h then return end
+    notify("Info",string.format("%s | HP:%.0f/%.0f | Walk:%.0f | Jump:%.0f",t.Name,h.Health,h.MaxHealth,h.WalkSpeed,h.JumpPower))
+end
+local function toggleFullbright(s)
+    fullbrightOn=s
+    if s then
+        fbSaved={B=Light.Brightness,A=Light.Ambient,OA=Light.OutdoorAmbient,T=Light.TimeOfDay,FE=Light.FogEnd,GS=Light.GlobalShadows}
+        Light.Brightness=2; Light.Ambient=Color3.new(1,1,1); Light.OutdoorAmbient=Color3.new(1,1,1); Light.TimeOfDay="14:00:00"; Light.FogEnd=100000; Light.GlobalShadows=false
+    else
+        if fbSaved.B then Light.Brightness=fbSaved.B; Light.Ambient=fbSaved.A; Light.OutdoorAmbient=fbSaved.OA; Light.TimeOfDay=fbSaved.T; Light.FogEnd=fbSaved.FE; Light.GlobalShadows=fbSaved.GS end; fbSaved={}
+    end
+end
+local function toggleAntiAfk(s)
+    antiAfkOn=s
+    if s then antiAfkConn=RS.Heartbeat:Connect(function() if not antiAfkOn then return end; pcall(function() game:GetService("VirtualUser"):CaptureController(); game:GetService("VirtualUser"):ClickButton2(Vector2.new()) end) end)
+    else if antiAfkConn then antiAfkConn:Disconnect(); antiAfkConn=nil end end
+end
+local function applyFPS()
+    fpsSaved.B=Light.Brightness; fpsSaved.GS=Light.GlobalShadows; fpsSaved.FE=Light.FogEnd
+    Light.GlobalShadows=false; Light.Brightness=2; Light.FogEnd=100000
+    for _,e in ipairs(Light:GetChildren()) do if e:IsA("PostEffect") or e:IsA("Sky") then e.Enabled=false end end
+    pcall(function() workspace.Terrain.WaterWaveSize=0; workspace.Terrain.Decoration=false end)
+    local n=0; for _,o in ipairs(workspace:GetDescendants()) do if o:IsA("BasePart") and not o:IsA("Terrain") then fpsSaved[o]={M=o.Material,CS=o.CastShadow,R=o.Reflectance}; o.Material=Enum.Material.SmoothPlastic; o.CastShadow=false; o.Reflectance=0; n=n+1; if n%200==0 then task.wait() end end end
+    notify("FPS","เปิดแล้ว! ("..n.." parts)")
+end
+local function removeFPS()
+    if fpsSaved.GS~=nil then Light.GlobalShadows=fpsSaved.GS; Light.Brightness=fpsSaved.B; Light.FogEnd=fpsSaved.FE end
+    for _,e in ipairs(Light:GetChildren()) do if e:IsA("PostEffect") or e:IsA("Sky") then e.Enabled=true end end
+    pcall(function() workspace.Terrain.Decoration=true end)
+    local n=0; for o,d in pairs(fpsSaved) do if typeof(o)=="Instance" and o:IsA("BasePart") then pcall(function() o.Material=d.M; o.CastShadow=d.CS; o.Reflectance=d.R end); n=n+1; if n%200==0 then task.wait() end end end
+    fpsSaved={}; notify("FPS","ปิดแล้ว")
+end
+local function doRejoin() notify("Rejoin","กำลังเข้าเกมใหม่..."); task.wait(1); pcall(function() game:GetService("TeleportService"):Teleport(game.PlaceId,plr) end) end
+local function doServerHop()
+    notify("Server Hop","กำลังหาเซิร์ฟเวอร์ใหม่...")
+    task.spawn(function()
+        local T=game:GetService("TeleportService"); local H=game:GetService("HttpService"); local found=false
+        pcall(function()
+            local data=H:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+            for _,s in ipairs(data.data or {}) do
+                if s.id~=game.JobId and s.playing<s.maxPlayers then pcall(function() T:TeleportToPlaceInstance(game.PlaceId,s.id,plr) end); found=true; break end
+            end
+        end)
+        if not found then pcall(function() T:Teleport(game.PlaceId,plr) end) end
+    end)
+end
+plr.CharacterAdded:Connect(function(c)
+    task.wait(.7); flyOn=false; flyConn=nil; bg=nil; bv=nil
+    local h=c:FindFirstChildWhichIsA("Humanoid"); if not h then return end
+    h.PlatformStand=false
+    if walkOn then h.WalkSpeed=walkVal end
+    if jumpOn then if jumpConn then jumpConn:Disconnect(); jumpConn=nil end; startJump() end
+    if noclipOn then task.wait(.1); toggleNoclip(true) end
+    local a=c:FindFirstChild("Animate"); if a then a.Disabled=false end
+end)
+local function buildGUI()
+    local L=L3[currentLang]
+    local toD={}; for _,g in ipairs(windUIGuis) do if typeof(g)=="Instance" and g.Parent then table.insert(toD,g) end end
+    windUIGuis={}; for _,g in ipairs(toD) do pcall(function() g:Destroy() end) end
+    task.wait(0.2)
+    local tracking=true
+    local conn=PGui.ChildAdded:Connect(function(child) if tracking and child:IsA("ScreenGui") then table.insert(windUIGuis,child) end end)
+    WindUI=loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+    local W=WindUI:CreateWindow({Title="Joey Hub",Icon="bird",Author="by MINHAJ"})
+    W:EditOpenButton({Title="JoeyHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true})
+    W:Tag({Title="v1.5",Icon="bird",Color=Color3.fromHex("#30ff6a"),Radius=13})
+    
+    -- [ TAB 1: MAIN ] --
+    local T1=W:Tab({Title=L.main,Icon="book",Locked=false})
+    T1:Toggle({Title=L.fly,      Desc="",Icon="bird",           Type="Checkbox",Value=false,Callback=function(s) toggleFly(s) end})
+    T1:Slider({Title=L.flySpd,   Desc="",Step=1,Value={Min=1,Max=50,Default=10},Callback=function(v) flySpeed=v*5 end})
+    T1:Toggle({Title=L.walk,     Desc="",Icon="person-standing",Type="Checkbox",Value=false,Callback=function(s) toggleWalk(s) end})
+    T1:Slider({Title=L.walkVal,  Desc="",Step=1,Value={Min=1,Max=50,Default=5}, Callback=function(v) setWalk(v) end})
+    T1:Toggle({Title=L.jump,     Desc="",Icon="arrow-up",       Type="Checkbox",Value=false,Callback=function(s) toggleJump(s) end})
+    T1:Slider({Title=L.jumpVal,  Desc="",Step=1,Value={Min=1,Max=50,Default=5}, Callback=function(v) jumpVal=v*30 end})
+    T1:Toggle({Title=L.chatSpam, Desc="",Icon="message-circle", Type="Checkbox",Value=false,Callback=function(s) toggleChatSpam(s) end})
+    T1:Input({Title=L.chatMsg,   Desc="",Icon="pencil",Default="Joey Hub",Locked=false,Callback=function(v) if v and v~="" then chatMsg=v end end})
+    T1:Slider({Title=L.chatDelay,Desc="",Step=0.1,Value={Min=0.1,Max=10,Default=1},Callback=function(v) chatSpamDelay=v end})
+    T1:Button({Title=L.savePos,   Desc="",Icon="map-pin",   Callback=function() savePos() end})
+    T1:Button({Title=L.tpSaved,   Desc="",Icon="map-pin",   Callback=function() if savedPos then tpTo(savedPos) else notify("TP","ยังไม่ได้บันทึก!") end end})
+    T1:Button({Title=L.tweenSaved,Desc="",Icon="navigation",Callback=function() if savedPos then tweenTo(savedPos) else notify("TP","ยังไม่ได้บันทึก!") end end})
+    T1:Slider({Title=L.tweenSpd,  Desc="",Step=1,Value={Min=1,Max=20,Default=10},Callback=function(v) tweenSpd=v end})
+    
+    -- [ TAB 2: PLAYERS ] --
+    local T2=W:Tab({Title=L.players,Icon="user",Locked=false})
+    local function getPList() local l={}; for _,p in ipairs(Players:GetPlayers()) do if p~=plr then table.insert(l,p.Name) end end; return l end
+    local dd=T2:Dropdown({Title=L.selPlr,Desc="",Values=getPList(),Value="",Callback=function(n) aimTarget=n~="" and Players:FindFirstChild(n) or nil; if aimbotOn and aimTarget then startAimbot() end end})
+    T2:Button({Title=L.refresh,  Desc="",Icon="refresh-cw", Callback=function() if aimTarget and not Players:FindFirstChild(aimTarget.Name) then aimTarget=nil; if aimbotOn then stopAimbot() end end; pcall(function() dd:Set(getPList()) end); notify("Players",#Players:GetPlayers()-1 .." players") end})
+    T2:Button({Title=L.tpPlr,    Desc="",Icon="map-pin",    Callback=function() if not aimTarget then notify("TP","เลือกผู้เล่นก่อน!"); return end; local r=aimTarget.Character and aimTarget.Character:FindFirstChild("HumanoidRootPart"); if r then tpTo(r.CFrame*CFrame.new(0,0,3)) end end})
+    T2:Button({Title=L.tweenPlr, Desc="",Icon="navigation", Callback=function() if not aimTarget then notify("TP","เลือกผู้เล่นก่อน!"); return end; local r=aimTarget.Character and aimTarget.Character:FindFirstChild("HumanoidRootPart"); if r then tweenTo(r.CFrame*CFrame.new(0,0,3)) end end})
+    T2:Slider({Title=L.tweenSpdP,Desc="",Step=1,Value={Min=1,Max=20,Default=10},Callback=function(v) tweenSpd=v end})
+    T2:Toggle({Title=L.aimbot,   Desc="",Icon="crosshair",  Type="Checkbox",Value=false,Callback=function(s) toggleAimbot(s) end})
+    T2:Toggle({Title=L.nearAim,  Desc="",Icon="crosshair",  Type="Checkbox",Value=false,Callback=function(s) toggleNear(s) end})
+    T2:Slider({Title=L.range,    Desc="",Step=1,Value={Min=1,Max=20,Default=10},Callback=function(v) nearRange=v*10 end})
+    T2:Toggle({Title=L.noclip,   Desc="",Icon="layers",     Type="Checkbox",Value=false,Callback=function(s) toggleNoclip(s) end})
+    T2:Toggle({Title=L.esp,      Desc="",Icon="eye",        Type="Checkbox",Value=false,Callback=function(s) toggleESP(s) end})
+    T2:Colorpicker({Title=L.espColor,Desc="",Default=espFill,Transparency=0,Locked=false,Callback=function(c) espFill=c; espOutline=Color3.new(math.min(c.R+.25,1),math.min(c.G+.25,1),math.min(c.B+.25,1)); updateESP() end})
+    T2:Button({Title=L.plrInfo,  Desc="",Icon="info",       Callback=function() showPlayerInfo(aimTarget) end})
+    
+    -- [ TAB 3: SETTINGS ] --
+    local T3=W:Tab({Title=L.settings,Icon="settings",Locked=false})
+    local fpsOn=false
+    T3:Toggle({Title=L.fps,       Desc="",Icon="zap",    Type="Checkbox",Value=false,Callback=function(s) fpsOn=s; if s then task.spawn(applyFPS) else task.spawn(removeFPS) end end})
+    T3:Toggle({Title=L.fullbright,Desc="",Icon="sun",    Type="Checkbox",Value=false,Callback=function(s) toggleFullbright(s) end})
+    T3:Toggle({Title=L.antiAfk,   Desc="",Icon="shield", Type="Checkbox",Value=false,Callback=function(s) toggleAntiAfk(s) end})
+    T3:Button({Title=L.rejoin,    Desc="",Icon="log-in", Callback=function() doRejoin() end})
+    T3:Button({Title=L.serverHop, Desc="",Icon="shuffle",Callback=function() doServerHop() end})
+    T3:Colorpicker({Title=L.guiColor,Desc="",Default=guiColor1,Transparency=0,Locked=false,Callback=function(c) guiColor1=c; guiColor2=Color3.new(math.min(c.R+.15,1),math.min(c.G+.15,1),math.min(c.B+.15,1)); W:EditOpenButton({Title="JoeyHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true}) end})
+    
+    -- LANGUAGE SETUP --
+    local lm={English="EN",["ภาษาไทย"]="TH",["ភាសាខ្មែរ"]="KH"}
+    local ld=currentLang=="TH" and "ภาษาไทย" or currentLang=="KH" and "ភាសាខ្មែរ" or "English"
+    T3:Dropdown({Title=L.lang,Desc="",Values={"English","ภาษาไทย","ភាសាខ្មែរ"},Value=ld,Callback=function(v) currentLang=lm[v] or "EN" end})
+    T3:Button({Title=L.reset,Desc="",Icon="refresh-cw",Callback=function()
+        task.spawn(function() task.wait(.1); buildGUI(); notify("GUI","เปลี่ยนภาษาเรียบร้อย!") end)
+    end})
+    
+    task.delay(2,function() tracking=false; conn:Disconnect() end)
+end
+
+-- START GUI & MUSIC --
+buildGUI()
+local sound=Instance.new("Sound")
+sound.Name="JoeyHubMusic"; sound.SoundId="rbxassetid://137837473324419"
+sound.Volume=1; sound.Looped=false; sound.RollOffMaxDistance=10000; sound.Parent=workspace
+if not sound.IsLoaded then sound.Loaded:Wait() end
+sound:Play()
