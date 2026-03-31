@@ -204,6 +204,86 @@ plr.CharacterAdded:Connect(function(c)
     if noclipOn then task.wait(.1); toggleNoclip(true) end
     local a=c:FindFirstChild("Animate"); if a then a.Disabled=false end
 end)
+
+-- [[ AIMBOT VARIABLES ]] --
+local SilentAim = false
+local CAMERA_LOCK = false
+local TeamCheck = true
+local MaxDistance = 1000
+local FOV = 150
+local CurrentTarget = nil
+
+-- [[ AIMBOT CORE LOGIC ]] --
+local function isAlive(char)
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    return hum and hum.Health > 0 and char:IsDescendantOf(workspace)
+end
+
+local function isTeammate(p)
+    if not TeamCheck then return false end
+    return p.Team == game:GetService("Players").LocalPlayer.Team
+end
+
+local function getTarget()
+    local Camera = workspace.CurrentCamera
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    local closest, target = math.huge, nil
+    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= game:GetService("Players").LocalPlayer and p.Character and isAlive(p.Character) and not isTeammate(p) then
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                local pos, on = Camera:WorldToViewportPoint(head.Position)
+                if on then
+                    local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                    local dist = (Camera.CFrame.Position - head.Position).Magnitude
+                    if d < FOV and d < closest and dist <= MaxDistance then
+                        closest, target = d, head
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- [[ SILENT AIM ENGINE ]] --
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+local oldIndex = mt.__index
+setreadonly(mt, false)
+mt.__index = newcclosure(function(self, idx)
+    if SilentAim and CurrentTarget and not checkcaller() and self == game:GetService("Players").LocalPlayer:GetMouse() then
+        if idx == "Hit" then return CurrentTarget.CFrame end
+        if idx == "Target" then return CurrentTarget end
+    end
+    return oldIndex(self, idx)
+end)
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if SilentAim and CurrentTarget and not checkcaller() then
+        if method == "Raycast" and self == workspace then
+            args[2] = (CurrentTarget.Position - args[1]).Unit * 1000
+            return oldNamecall(self, unpack(args))
+        end
+        if method == "FireServer" or method == "InvokeServer" then
+            for i, v in ipairs(args) do
+                if typeof(v) == "Vector3" then args[i] = CurrentTarget.Position
+                elseif typeof(v) == "CFrame" then args[i] = CurrentTarget.CFrame end
+            end
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    CurrentTarget = (SilentAim or CAMERA_LOCK) and getTarget() or nil
+    if CAMERA_LOCK and CurrentTarget then
+        workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, CurrentTarget.Position)
+    end
+end)
+
 local function buildGUI()
     local L=L3[currentLang]
     local toD={}; for _,g in ipairs(windUIGuis) do if typeof(g)=="Instance" and g.Parent then table.insert(toD,g) end end
@@ -256,92 +336,95 @@ local function buildGUI()
     T3:Toggle({Title=L.antiAfk,   Desc="",Icon="shield", Type="Checkbox",Value=false,Callback=function(s) toggleAntiAfk(s) end})
     T3:Button({Title=L.rejoin,    Desc="",Icon="log-in", Callback=function() doRejoin() end})
     T3:Button({Title=L.serverHop, Desc="",Icon="shuffle",Callback=function() doServerHop() end})
-    T3:Colorpicker({Title=L.guiColor,Desc="",Default=guiColor1,Transparency=0,Locked=false,Callback=function(c) guiColor1=c; guiColor2=Color3.new(math.min(c.R+.15,1),math.min(c.G+.15,1),math.min(c.B+.15,1)); W:EditOpenButton({Title="JoeyHub",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true}) end})
+    T3:Colorpicker({Title=L.guiColor,Desc="",Default=guiColor1,Transparency=0,Locked=false,Callback=function(c) guiColor1=c; guiColor2=Color3.new(math.min(c.R+.15,1),math.min(c.G+.15,1),math.min(c.B+.15,1)); W:EditOpenButton({Title="YNW Melly",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true}) end})
    
--- [ TAB 4 : SETTINGS ] --
--- [ Aimbot Variables ] --
-local SilentAim = false
-local CAMERA_LOCK = false
-local TeamCheck = true
-local MaxDistance = 1000
-local FOV = 150
-local CurrentTarget = nil
+--------------------------------------------------
+-- [ TAB 4: AIMBOT SETTINGS ] --
+--------------------------------------------------
+local T4 = W:Tab({Title = "Aimbot", Icon = "crosshair", Locked = false})
 
--- [ Core Functions ] --
-local function isAlive(char)
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    return hum and hum.Health > 0 and char:IsDescendantOf(workspace)
-end
+T4:Section({Title = "Main Logic"})
 
-local function isTeammate(p)
-    if not TeamCheck then return false end
-    return p.Team == game:GetService("Players").LocalPlayer.Team
-end
+T4:Toggle({
+    Title = "Silent Aim",
+    Desc = "ยิงล็อกเป้าอัตโนมัติ (ไม่ต้องหันหน้า)",
+    Icon = "target",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(s) 
+        SilentAim = s 
+    end
+})
 
-local function getTarget()
-    local Camera = workspace.CurrentCamera
-    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    local closest, target = math.huge, nil
+T4:Toggle({
+    Title = "Camera Lock",
+    Desc = "หมุนหน้าจอไปหาศัตรูอัตโนมัติ",
+    Icon = "video",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(s) 
+        CAMERA_LOCK = s 
+    end
+})
 
-    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-        if p ~= game:GetService("Players").LocalPlayer and p.Character and isAlive(p.Character) and not isTeammate(p) then
-            local head = p.Character:FindFirstChild("Head")
-            if head then
-                local pos, on = Camera:WorldToViewportPoint(head.Position)
-                if on then
-                    local d = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                    local dist = (Camera.CFrame.Position - head.Position).Magnitude
-                    if d < FOV and d < closest and dist <= MaxDistance then
-                        closest, target = d, head
-                    end
-                end
-            end
+T4:Toggle({
+    Title = "Team Check",
+    Desc = "ไม่ล็อกเป้าหมายที่เป็นพวกเดียวกัน",
+    Icon = "users",
+    Type = "Checkbox",
+    Value = true,
+    Callback = function(s) 
+        TeamCheck = s 
+    end
+})
+
+T4:Section({Title = "Configurations"})
+
+T4:Slider({
+    Title = "FOV Radius",
+    Desc = "ระยะวงกลมในการล็อกเป้า",
+    Step = 1,
+    Value = {Min = 50, Max = 800, Default = 150},
+    Callback = function(v) 
+        FOV = v 
+    end
+})
+
+T4:Slider({
+    Title = "Max Distance",
+    Desc = "ระยะห่างสูงสุดที่จะล็อกเป้า",
+    Step = 50,
+    Value = {Min = 100, Max = 5000, Default = 1000},
+    Callback = function(v) 
+        MaxDistance = v 
+    end
+})
+
+T4:Button({
+    Title = "Reset Target",
+    Desc = "ล้างค่าเป้าหมายปัจจุบัน",
+    Icon = "refresh-cw",
+    Callback = function() 
+        CurrentTarget = nil 
+        if notify then
+            notify("Aimbot", "Target has been reset!")
         end
     end
-    return target
-end
+})
 
--- [ Deep Hook Engine ] --
--- ส่วนนี้ทำหน้าที่ทำให้กระสุนวิ่งไปหาเป้าหมาย (Silent Aim)
-local mt = getrawmetatable(game)
-local oldNamecall = mt.__namecall
-local oldIndex = mt.__index
-setreadonly(mt, false)
-
-mt.__index = newcclosure(function(self, idx)
-    if SilentAim and CurrentTarget and not checkcaller() and self == game:GetService("Players").LocalPlayer:GetMouse() then
-        if idx == "Hit" then return CurrentTarget.CFrame end
-        if idx == "Target" then return CurrentTarget end
-    end
-    return oldIndex(self, idx)
-end)
-
-mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    if SilentAim and CurrentTarget and not checkcaller() then
-        if method == "Raycast" and self == workspace then
-            args[2] = (CurrentTarget.Position - args[1]).Unit * 1000
-            return oldNamecall(self, unpack(args))
-        end
-        if method == "FireServer" or method == "InvokeServer" then
-            for i, v in ipairs(args) do
-                if typeof(v) == "Vector3" then args[i] = CurrentTarget.Position
-                elseif typeof(v) == "CFrame" then args[i] = CurrentTarget.CFrame end
-            end
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-setreadonly(mt, true)
-
--- [ Render Loop ] --
-game:GetService("RunService").RenderStepped:Connect(function()
+--------------------------------------------------
+-- [ ส่วนปิดท้ายสคริปต์ / LOOP CLEANUP ] --
+--------------------------------------------------
+-- ตรวจสอบว่า RenderStepped ถูกปิดอย่างถูกต้อง
+RunService.RenderStepped:Connect(function()
     CurrentTarget = (SilentAim or CAMERA_LOCK) and getTarget() or nil
     if CAMERA_LOCK and CurrentTarget then
         workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, CurrentTarget.Position)
     end
-end)
+end) -- ควย
+
+-- จบการทำงานของสคริปต์
+print("Aimbot")
 
     -- LANGUAGE SETUP --
     local lm={English="EN",["ภาษาไทย"]="TH",["ភាសាខ្មែរ"]="KH"}
