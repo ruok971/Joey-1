@@ -205,7 +205,6 @@ plr.CharacterAdded:Connect(function(c)
     local a=c:FindFirstChild("Animate"); if a then a.Disabled=false end
 end)
 
--- [[ AIMBOT VARIABLES ]] --
 local SilentAim = false
 local CAMERA_LOCK = false
 local TeamCheck = true
@@ -338,93 +337,52 @@ local function buildGUI()
     T3:Button({Title=L.serverHop, Desc="",Icon="shuffle",Callback=function() doServerHop() end})
     T3:Colorpicker({Title=L.guiColor,Desc="",Default=guiColor1,Transparency=0,Locked=false,Callback=function(c) guiColor1=c; guiColor2=Color3.new(math.min(c.R+.15,1),math.min(c.G+.15,1),math.min(c.B+.15,1)); W:EditOpenButton({Title="YNW Melly",Icon="monitor",CornerRadius=UDim.new(0,16),StrokeThickness=2,Color=ColorSequence.new(guiColor1,guiColor2),OnlyMobile=false,Enabled=true,Draggable=true}) end})
    
---------------------------------------------------
--- [ TAB 4: AIMBOT SETTINGS ] --
---------------------------------------------------
+
+-- [ TAB 4: AIMBOT ] --
 local T4 = W:Tab({Title = "Aimbot", Icon = "crosshair", Locked = false})
 
-T4:Section({Title = "Main Logic"})
-
 T4:Toggle({
-    Title = "Silent Aim",
-    Desc = "ยิงล็อกเป้าอัตโนมัติ (ไม่ต้องหันหน้า)",
+    Title = "🔫 Silent Aim ", 
+    Desc = "กระสุนเข้าเป้าอัตโนมัติ", 
     Icon = "target",
     Type = "Checkbox",
-    Value = false,
-    Callback = function(s) 
-        SilentAim = s 
-    end
+    Value = false, 
+    Callback = function(v) SilentAim = v end
 })
 
 T4:Toggle({
-    Title = "Camera Lock",
-    Desc = "หมุนหน้าจอไปหาศัตรูอัตโนมัติ",
+    Title = "Camera Lock (ล็อคหน้าจอ)", 
+    Desc = "หันหน้าจอไปหาศัตรู", 
     Icon = "video",
     Type = "Checkbox",
-    Value = false,
-    Callback = function(s) 
-        CAMERA_LOCK = s 
-    end
+    Value = false, 
+    Callback = function(v) CAMERA_LOCK = v end
 })
 
 T4:Toggle({
-    Title = "Team Check",
-    Desc = "ไม่ล็อกเป้าหมายที่เป็นพวกเดียวกัน",
+    Title = "Team Check", 
+    Desc = "ตรวจสอบทีม", 
     Icon = "users",
     Type = "Checkbox",
-    Value = true,
-    Callback = function(s) 
-        TeamCheck = s 
-    end
-})
-
-T4:Section({Title = "Configurations"})
-
-T4:Slider({
-    Title = "FOV Radius",
-    Desc = "ระยะวงกลมในการล็อกเป้า",
-    Step = 1,
-    Value = {Min = 50, Max = 800, Default = 150},
-    Callback = function(v) 
-        FOV = v 
-    end
+    Value = true, 
+    Callback = function(v) TeamCheck = v end
 })
 
 T4:Slider({
-    Title = "Max Distance",
-    Desc = "ระยะห่างสูงสุดที่จะล็อกเป้า",
-    Step = 50,
-    Value = {Min = 100, Max = 5000, Default = 1000},
-    Callback = function(v) 
-        MaxDistance = v 
-    end
+    Title = "FOV Size", 
+    Desc = "ระยะวงกลมล็อกเป้า",
+    Step = 1, 
+    Value = {Min = 40, Max = 800, Default = 150}, 
+    Callback = function(v) FOV = v end
 })
 
-T4:Button({
-    Title = "Reset Target",
-    Desc = "ล้างค่าเป้าหมายปัจจุบัน",
-    Icon = "refresh-cw",
-    Callback = function() 
-        CurrentTarget = nil 
-        if notify then
-            notify("Aimbot", "Target has been reset!")
-        end
-    end
+T4:Slider({
+    Title = "Max Distance", 
+    Desc = "ระยะห่างสูงสุด",
+    Step = 10, 
+    Value = {Min = 100, Max = 5000, Default = 1000}, 
+    Callback = function(v) MaxDistance = v end
 })
-
---------------------------------------------------
--- [ ส่วนปิดท้ายสคริปต์ / LOOP CLEANUP ] --
---------------------------------------------------
--- ตรวจสอบว่า RenderStepped ถูกปิดอย่างถูกต้อง
-RunService.RenderStepped:Connect(function()
-    CurrentTarget = (SilentAim or CAMERA_LOCK) and getTarget() or nil
-    if CAMERA_LOCK and CurrentTarget then
-        workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, CurrentTarget.Position)
-    end
-end) -- ควย
-
--- จบการทำงานของสคริปต์
-print("Aimbot")
 
     -- LANGUAGE SETUP --
     local lm={English="EN",["ภาษาไทย"]="TH",["ភាសាខ្មែរ"]="KH"}
