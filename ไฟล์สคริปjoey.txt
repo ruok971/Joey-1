@@ -520,8 +520,8 @@ local T4 = W:Tab({Title = "Aimbot", Icon = "crosshair", Locked = false})
 
 -- Silent Aim
 T4:Toggle({
-    Title = "🔫 Silent Aim (บังคับยิง)", 
-    Desc = "กระสุนเข้าเป้าอัตโนมัติ", 
+    Title = "Silent Aim", 
+    Desc = "เอมบอทอะแหละเข้าใจไรยาก", 
     Icon = "target",
     Type = "Checkbox",
     Value = false, 
@@ -530,7 +530,7 @@ T4:Toggle({
 
 -- Camera Lock
 T4:Toggle({
-    Title = "🎥 Camera Lock (ล็อคหน้าจอ)", 
+    Title = "Camera Lock", 
     Desc = "หันหน้าจอไปหาศัตรู", 
     Icon = "video",
     Type = "Checkbox",
@@ -580,7 +580,7 @@ T4:Slider({
 -- Max Distance
 T4:Slider({
     Title = " Max Distance", 
-    Desc = "ระยะห่างสูงสุด (ESP + Aim)",
+    Desc = "ระยะห่างสูงสุดเอมบอท)",
     Step = 10, 
     Value = {Min = 100, Max = 5000, Default = 1000}, 
     Callback = function(v) MaxDistance = v end
