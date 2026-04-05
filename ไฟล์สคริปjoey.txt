@@ -540,7 +540,7 @@ T4:Toggle({
 
 -- ESP Name
 T4:Toggle({
-    Title = "👤 ESP Name", 
+    Title = "ESP Name", 
     Desc = "แสดงชื่อและระยะศัตรู",
     Icon = "user",
     Type = "Checkbox",
@@ -550,7 +550,7 @@ T4:Toggle({
 
 -- Rainbow ESP
 T4:Toggle({
-    Title = "🌈 Rainbow ESP", 
+    Title = "Rainbow ESP", 
     Desc = "กรอบตัวละครสีรุ้ง",
     Icon = "palette",
     Type = "Checkbox",
@@ -560,7 +560,7 @@ T4:Toggle({
 
 -- Team Check
 T4:Toggle({
-    Title = "👥 Team Check", 
+    Title = "Team Check", 
     Desc = "ไม่ล็อคเป้าทีมเดียวกัน",
     Icon = "users",
     Type = "Checkbox",
@@ -570,7 +570,7 @@ T4:Toggle({
 
 -- FOV
 T4:Slider({
-    Title = "🎯 FOV Size", 
+    Title = "FOV Size", 
     Desc = "ระยะวงกลมล็อกเป้า",
     Step = 1, 
     Value = {Min = 40, Max = 800, Default = 150}, 
@@ -579,7 +579,7 @@ T4:Slider({
 
 -- Max Distance
 T4:Slider({
-    Title = "📏 Max Distance", 
+    Title = " Max Distance", 
     Desc = "ระยะห่างสูงสุด (ESP + Aim)",
     Step = 10, 
     Value = {Min = 100, Max = 5000, Default = 1000}, 
