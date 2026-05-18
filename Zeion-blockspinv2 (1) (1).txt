@@ -323,42 +323,63 @@ local SprintBar = debug.getupvalue(consume_stamina, 2).sprint_bar
 local holdingJump = false
 
 -- UI Initialization
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local Icons = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Footagesus/Icons/main/Main.lua"))()
 
-Icons.SetIconsType("lucide") -- lucide, craft and more...
+Icons.SetIconsType("lucide")
 
-local Window =
-    WindUI:CreateWindow(
-    {
-        Icon = "rbxassetid://116912491561156", -- my custom vector* icon
-        IconThemed = true,
-        
-        Title = "Zeion Hub | Block Spin ",
-        Author = "by x2SAXZRLzzz",
-        Folder = "zeion's",
-        Size = UDim2.fromOffset(400, 400),
-        MinSize = Vector2.new(560, 350),
-        MaxSize = Vector2.new(850, 560),
-        Transparent = true,
-        Theme = "Dark",
-        Resizable = true,
-        SideBarWidth = 200,
-        BackgroundImageTransparency = 0.42,
-        HideSearchBar = false,
-        ScrollBarEnabled = false,
-        
-        OpenButton = {
-            Title = "Zeion Hub",
-            CornerRadius = UDim.new(1, 0),
-            StrokeThickness = 3,
-            Enabled = true,
-            Draggable = true,
-            OnlyMobile = false
-        }
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+local LIGHT_BLUE = Color3.fromRGB(80, 200, 255)
+local CYAN       = Color3.fromRGB(0, 160, 255)
+local DEEP_BLUE  = Color3.fromRGB(0, 90, 190)
+local TEXT_COLOR = Color3.fromRGB(240, 245, 255)
+
+local Accent = WindUI:Gradient({
+    ["0"] = {Color = LIGHT_BLUE},
+    ["50"] = {Color = CYAN},
+    ["100"] = {Color = DEEP_BLUE}
+},{Rotation = 90})
+
+WindUI:AddTheme({
+    Name = "CYAN_GLASS",
+    Accent = Accent,
+    Background = Accent,
+    Outline = CYAN,
+    Text = TEXT_COLOR,
+})
+
+local Window = WindUI:CreateWindow({
+    Icon = "rbxassetid://116912491561156",
+    IconThemed = true,
+    Title = "Zeion Hub | Block Spin",
+    Author = "by x2SAXZRLzzz",
+    Folder = "zeion's",
+    Size = UDim2.fromOffset(850, 500),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    Transparent = true,
+    Theme = "CYAN_GLASS",
+    Resizable = true,
+    SideBarWidth = 200,
+    BackgroundImageTransparency = 0.42,
+    HideSearchBar = false,
+    ScrollBarEnabled = false,
+    OpenButton = {
+        Title = "Zeion Hub",
+        CornerRadius = UDim.new(1, 0),
+        StrokeThickness = 3,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false
     }
-)
+})
+
 
 Window:Tag(
     {
