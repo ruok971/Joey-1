@@ -355,10 +355,10 @@ WindUI:AddTheme({
 })
 
 local Window = WindUI:CreateWindow({
-    Icon = "rbxassetid://116912491561156",
+    Icon = "bird",
     IconThemed = true,
-    Title = "Zeion Hub | Block Spin",
-    Author = "by x2SAXZRLzzz",
+    Title = "Tribe Hub | Block Spin",
+    Author = "by ยังหลอน",
     Folder = "zeion's",
     Size = UDim2.fromOffset(850, 500),
     MinSize = Vector2.new(560, 350),
@@ -371,23 +371,46 @@ local Window = WindUI:CreateWindow({
     HideSearchBar = false,
     ScrollBarEnabled = false,
     OpenButton = {
-        Title = "Zeion Hub",
-        CornerRadius = UDim.new(1, 0),
-        StrokeThickness = 3,
+        Title = "Tribe Hub",
+        CornerRadius = UDim.new(0, 16),
+        StrokeThickness = 2,
         Enabled = true,
         Draggable = true,
         OnlyMobile = false
     }
 })
 
+Window:EditOpenButton({
+    Title = "Tribe Hub",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0, 16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(LIGHT_BLUE, DEEP_BLUE),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true
+})
 
-Window:Tag(
-    {
-        Title = "Blockspin",
-        Color = Color3.fromHex("#FF0000"),
-        Radius = 13
-    }
-)
+Window:Tag({
+    Title = "v5.9",
+    Icon = "bird",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 13
+})
+
+Window:Tag({
+    Title = "Blockspin",
+    Color = Color3.fromHex("#FF0000"),
+    Radius = 13
+})
+
+Window:Tag({
+    Title = "TribeHub",
+    Color = Color3.fromHex("#00FF00"),
+    Radius = 13
+})
+
+
 --====================================================
 -- 🧍 MAIN TAB
 --====================================================
