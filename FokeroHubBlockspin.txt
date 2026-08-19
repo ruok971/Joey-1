@@ -894,8 +894,8 @@ end
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-	Title = "Fokero Hub | Blockspin",
-	Icon = "rbxassetid://119333291493913",
+	Title = "Kaiser Hub | Blockspin",
+	Icon = "rbxassetid://108952141737523",
 	Author = "",
 	Folder = "boss",
 	Size = UDim2.fromOffset(400, 400),
@@ -905,13 +905,20 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:Tag({
-    Title = "Fokero Hub",
+    Title = "Kaiser Hub",
     Icon = "github",
-    Color = Color3.fromHex("#30ff6a"),
+    Color = Color3.fromHex("3b82f6"),
     Radius = 10, 
 })
 
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Yenixs/ToolScript/refs/heads/main/GuiToggle.luau'))()("rbxassetid://119333291493913", function()
+Window:Tag({
+    Title = "Blockspin",
+    Icon = "crown",
+    Color = Color3.fromHex("ef4444"),
+    Radius = 10, 
+})
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Yenixs/ToolScript/refs/heads/main/GuiToggle.luau'))()("rbxassetid://108952141737523", function()
     Window:Toggle()
 end)
 
