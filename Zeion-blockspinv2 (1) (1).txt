@@ -1323,8 +1323,81 @@ if not IsMobile then
     TargetHeadCircle.Visible = false
 else
     -- ===== Mobile: ใช้ ScreenGui แบบ Gradient =====
+-- ==========================================
+-- ระบบแสดงผล Gradient FOV และ Target Circle
+-- รองรับทั้งแพลตฟอร์ม PC และ Mobile
+-- ==========================================
+
+-- ประกาศตัวแปรสำหรับเก็บสถานะและองค์ประกอบ UI ต่างๆ
+local FOVCircleSegments = {} -- เก็บเส้น Line สำหรับวาดวงกลม Gradient บน PC
+local FOVCircleGui = nil     -- ScreenGui หลักสำหรับ FOV บนมือถือ
+local FOVCircleFrame = nil   -- Frame ของวงกลม FOV บนมือถือ
+local Tracer = nil           -- (ไม่ได้ใช้งานแล้ว) เส้น Tracer
+local TracerGui = nil        -- (ไม่ได้ใช้งานแล้ว) GUI ของ Tracer
+local TracerFrame = nil      -- (ไม่ได้ใช้งานแล้ว) Frame ของ Tracer
+local TargetHeadCircle = nil -- วงกลมเป้าหมายบนหัว (PC)
+local TargetCircleGui = nil  -- ScreenGui สำหรับวงกลมเป้าหมาย (มือถือ)
+local TargetCircleFrame = nil-- Frame ของวงกลมเป้าหมาย (มือถือ)
+
+if not IsMobile then
+    -- ==========================================
+    -- สำหรับ PC: ใช้ Drawing API วาดเส้นต่อกันเป็นวงกลม
+    -- ==========================================
     
-    -- FOV Circle GUI
+    -- สร้างเส้น Line ทั้งหมด 64 เส้น เพื่อมาเรียงต่อกันเป็นวงกลมเนียนๆ
+    for i = 1, 64 do
+        local line = Drawing.new("Line")
+        line.Thickness = 2
+        line.Visible = false
+        table.insert(FOVCircleSegments, line)
+    end
+
+    -- สร้างวงกลมสำหรับแสดงเป้าหมายบนหัว (Target Head)
+    TargetHeadCircle = Drawing.new("Circle")
+    TargetHeadCircle.Color = Color3.fromRGB(255, 250, 250)
+    TargetHeadCircle.Thickness = 2
+    TargetHeadCircle.NumSides = 32
+    TargetHeadCircle.Filled = false
+    TargetHeadCircle.Transparency = 1
+    TargetHeadCircle.Radius = 15
+    TargetHeadCircle.Visible = false
+
+    -- ลูปสำหรับอัปเดตตำแหน่งและการเปลี่ยนสีรุ้ง (Rainbow Gradient) ของวงกลม FOV บน PC ทุกๆ เฟรม
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if #FOVCircleSegments > 0 and FOVCircleSegments[1].Visible then
+            local camera = workspace.CurrentCamera
+            local screenCenter = camera.ViewportSize / 2
+            local numSegments = #FOVCircleSegments
+            local time = tick()
+            
+            -- คำนวณจุดพิกัดของแต่ละเส้นรอบวงกลมและกำหนดสีแบบไล่ระดับ
+            for i = 1, numSegments do
+                local angle1 = (i - 1) / numSegments * (2 * math.pi)
+                local angle2 = (i / numSegments) * (2 * math.pi)
+                
+                local p1 = Vector2.new(screenCenter.X + FOVRadius * math.cos(angle1), screenCenter.Y + FOVRadius * math.sin(angle1))
+                local p2 = Vector2.new(screenCenter.X + FOVRadius * math.cos(angle2), screenCenter.Y + FOVRadius * math.sin(angle2))
+                
+                local line = FOVCircleSegments[i]
+                line.From = p1
+                line.To = p2
+                -- คำนวณสี HSV ตามตำแหน่งเส้นและเวลา เพื่อให้เกิดเอฟเฟกต์สีวิ่งวน
+                line.Color = Color3.fromHSV(((i / numSegments) + (time * 0.5)) % 1, 1, 1)
+                line.Visible = true
+            end
+        else
+            -- ซ่อนเส้นทั้งหมดหาก FOV ปิดใช้งาน
+            for _, line in ipairs(FOVCircleSegments) do
+                line.Visible = false
+            end
+        end
+    end)
+else
+    -- ==========================================
+    -- สำหรับ Mobile: ใช้ ScreenGui และ UIStroke ร่วมกับ UIGradient
+    -- ==========================================
+    
+    -- สร้าง ScreenGui สำหรับเก็บวงกลม FOV
     FOVCircleGui = Instance.new("ScreenGui")
     FOVCircleGui.Name = "SilentAimFOV"
     FOVCircleGui.IgnoreGuiInset = true
@@ -1332,6 +1405,7 @@ else
     FOVCircleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     FOVCircleGui.Parent = game:GetService("CoreGui")
     
+    -- สร้าง Frame เปล่าสำหรับเป็นกรอบวงกลม
     FOVCircleFrame = Instance.new("Frame")
     FOVCircleFrame.Name = "Circle"
     FOVCircleFrame.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1341,36 +1415,41 @@ else
     FOVCircleFrame.Visible = false
     FOVCircleFrame.Parent = FOVCircleGui
     
+    -- เพิ่มเส้นขอบ (Stroke) ให้กับ Frame
     local FOVStroke = Instance.new("UIStroke")
     FOVStroke.Thickness = 3
     FOVStroke.Transparency = 0
     FOVStroke.Parent = FOVCircleFrame
     
+    -- เพิ่ม Gradient เพื่อให้เส้นขอบมีหลายสี
     local FOVGradient = Instance.new("UIGradient")
     FOVGradient.Parent = FOVStroke
+    -- กำหนดชุดสีรุ้ง (Rainbow ColorSequence)
+    FOVGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),     -- แดง
+        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 165, 0)),  -- ส้ม
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),  -- เหลือง
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),    -- เขียว
+        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),    -- น้ำเงิน
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(75, 0, 130)),   -- คราม
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(238, 130, 238))   -- ม่วง
+    })
     
+    -- ฟังก์ชันหมุนวนสี Gradient ของมือถือทุกๆ เฟรม
+    local gradientRotation = 0
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if FOVCircleFrame and FOVCircleFrame.Visible then
+            gradientRotation = (gradientRotation + 2) % 360
+            FOVGradient.Rotation = gradientRotation
+        end
+    end)
+    
+    -- ปรับให้ Frame กลายเป็นรูปวงกลมสมบูรณ์
     local FOVCorner = Instance.new("UICorner")
     FOVCorner.CornerRadius = UDim.new(1, 0)
     FOVCorner.Parent = FOVCircleFrame
     
-    -- Tracer GUI
-    TracerGui = Instance.new("ScreenGui")
-    TracerGui.Name = "SilentAimTracer"
-    TracerGui.IgnoreGuiInset = true
-    TracerGui.ResetOnSpawn = false
-    TracerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    TracerGui.Parent = game:GetService("CoreGui")
-    
-    TracerFrame = Instance.new("Frame")
-    TracerFrame.Name = "Line"
-    TracerFrame.BackgroundColor3 = Color3.fromRGB(124, 252, 0)
-    TracerFrame.BorderSizePixel = 0
-    TracerFrame.AnchorPoint = Vector2.new(0, 0.5)
-    TracerFrame.Size = UDim2.new(0, 0, 0, 2)
-    TracerFrame.Visible = false
-    TracerFrame.Parent = TracerGui
-    
-    -- Target Circle GUI
+    -- สร้าง ScreenGui สำหรับแสดงวงกลมล็อกเป้าหมาย (Target Circle) บนมือถือ
     TargetCircleGui = Instance.new("ScreenGui")
     TargetCircleGui.Name = "SilentAimTarget"
     TargetCircleGui.IgnoreGuiInset = true
@@ -1386,6 +1465,7 @@ else
     TargetCircleFrame.Visible = false
     TargetCircleFrame.Parent = TargetCircleGui
     
+    -- กำหนดเส้นขอบสีขาวให้วงกลมเป้าหมาย
     local TargetStroke = Instance.new("UIStroke")
     TargetStroke.Color = Color3.fromRGB(255, 250, 250)
     TargetStroke.Thickness = 2
@@ -1397,12 +1477,14 @@ else
     TargetCorner.Parent = TargetCircleFrame
 end
 
--- ฟังก์ชันคำนวณจุดบนวงกลม
+-- ฟังก์ชันเสริมสำหรับคำนวณตำแหน่งจุดบนเส้นรอบวงกลมด้วยหลักการทางคณิตศาสตร์ (Trigonometry)
 local function GetCirclePoint(center, radius, angle)
     local x = center.X + radius * math.cos(angle)
     local y = center.Y + radius * math.sin(angle)
     return Vector2.new(x, y)
 end
+
+    
 
 -- ระบบติดตาม velocity ของ target
 local TargetHistory = {}
